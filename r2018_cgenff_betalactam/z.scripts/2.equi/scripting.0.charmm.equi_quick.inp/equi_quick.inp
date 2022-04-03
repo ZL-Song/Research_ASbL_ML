@@ -1,0 +1,131 @@
+* Proj Force Field Dev - cephalosporins
+* Water interaction: Fragment V.
+* unit 69: equi_bond.ene output
+* Zilin Song, 16 Jan 2019
+* 
+
+ IOFOrmat EXTEnted
+ PRNLev 6
+ BOMLev 0
+
+! { scripting logic control }
+ 
+ SET residue FRG5
+ 
+ SET stage 4        ! 4 = hoh interac calculation basing on qm geometry.
+                    ! 5 = ... ....... ........... ...... .. mm .........
+ SET crdname fileName
+
+ SET optff ./frg5.strm           ! .strm to optimize.
+
+ ! cgenff force field directory
+ ! must have following files: 
+ ! par_all36_cgenff.prm / top_all36_cgenff.rtf
+ ! toppar_dum_noble_gases.str / toppar_water_ions.str
+ SET topparDir ./forcefield
+
+! { Initialize work directory & else }
+ 
+ IF @stage .eq. 4 THEN
+  SET crdname @residue.hfmini.crd   ! @residue_hfmini.crd: name of hf optimized coor file.
+ ELSE
+  SET crdname @residue.mdmini.crd   ! @residue_mdmini.crd: name of mm optimized coor file.
+ ENDIf
+ 
+ ! output ** unit 69 **
+ OPEN UNIT 69 WRITe FORM NAME @residue_bond.ene
+
+! { read force field Cgenff force fields to support generated force field }
+
+ OPEN UNIT 10 READ CARD NAME @topparDir/top_all36_cgenff.rtf
+  READ rtf CARD UNIT 10
+  CLOSe UNIT 10
+  
+ BOMLev -2      ! required for passing NBFIX error.
+                ! NBFIX error pops up when:
+                ! No protein force field read before cgenff.
+ OPEN UNIT 10 READ CARD NAME @topparDir/par_all36_cgenff.prm
+  READ param CARD FLEX UNIT 10                ! FLEX is required for mass changed force fields.
+  CLOSe UNIT 10
+ BOMLev 0
+ 
+ STREam @topparDir/toppar_dum_noble_gases.str    ! dummy atom force field
+ STREAM @topparDir/toppar_water_ions.str         ! water tip3 force field
+
+ ! read optimized force field
+ STREam @optff
+
+! { target molecule crd & psf }
+ 
+ READ SEQUence CARD
+ * @residue
+ * 
+ 1
+ @residue
+ 
+ GENErate @residue FIRSt none LAST none WARN SETUp
+ 
+ OPEN UNIT 20 READ FORM NAME @crdname
+  READ COOR CARD UNIT 20 APPEnd
+  CLOSE UNIT 20
+
+! { do minimization & save minimized crd }
+
+ MINI CONJ NSTEp 200 NPRINt 20 INBFrq 1000 CUTNb 999
+ MINI NRAP NSTEp 50 TOLGrd 0.00001
+ 
+ OPEN UNIT 13 WRITe FORM NAME @residue_mmmini.pdb
+  WRITe coor pdb UNIT 13
+  CLOSe UNIT 13
+
+! { production: qm mm bond length comparison }
+
+ SET diff 999.9999
+ 
+ ECHU 69
+ ECHO FRG5 equi bond
+ ECHO == bond lengths ==
+
+ QUICk 1 6
+ SET bondlen ?dist
+ CALC diff = 1.37016 - @bondlen
+ ECHO le C1-N6: qm 1.37016 mm @bondlen diff @diff
+
+ QUICk 1 2
+ SET bondlen ?dist
+ CALC diff = 1.27724 - @bondlen
+ ECHO le C1-N2: qm 1.27724 mm @bondlen diff @diff
+
+ QUICk 1 5
+ SET bondlen ?dist
+ CALC diff = 1.74637 - @bondlen
+ ECHO le C1-S5: qm 1.74637 mm @bondlen diff @diff
+
+ ECHO == bond angles ==
+ 
+ QUICk 6 1 2
+ SET bondang ?thet
+ CALC diff = 123.81202 - @bondang
+ ECHO an N2-C1-N6: qm 123.81202 mm @bondang diff @diff
+ 
+ QUICk 6 1 5
+ SET bondang ?thet
+ CALC diff = 120.87918 - @bondang
+ ECHO an N2-C1-S5: qm 120.87918 mm @bondang diff @diff
+
+ QUICk 6 1 5
+ SET bondang ?thet
+ CALC diff = 120.87918 - @bondang
+ ECHO an N2-C1-S5: qm 120.87918 mm @bondang diff @diff
+ 
+ QUICk 1 6 9
+ SET bondang ?thet
+ CALC diff = 112.77353 - @bondang
+ ECHO an C1-N6-H9: qm 112.77353 mm @bondang diff @diff
+
+ QUICk 1 6 10
+ SET bondang ?thet
+ CALC diff = 116.67340 - @bondang
+ ECHO an C1-N6-H10: qm 116.67340 mm @bondang diff @diff
+
+ STOP

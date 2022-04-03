@@ -1,0 +1,216 @@
+1
+                 Chemistry at HARvard Macromolecular Mechanics
+           (CHARMM) - Developmental Version 42b2   February 15, 2018            
+       Copyright(c) 1984-2014  President and Fellows of Harvard College
+                              All Rights Reserved
+  Current operating system: Linux-3.10.0-693.21.1.el7.x86_64(x86_64)@login04.   
+                 Created on  1/17/19 at 12:47:48 by user: zilins      
+
+            Maximum number of ATOMS:    360720, and RESidues:      120240
+ RDTITL> * PROJ FORCE FIELD DEV - SMALL DRUG MOLECULES
+ RDTITL> * MOLECULAR VIBRATION FREQUENCY OPTIMIZATION
+ RDTITL> * BASING ON GAUSSIAN MP2/6-31GD VIRBATIONAL SPECTRUM TO GENERATE QM TARGET DATA
+ RDTITL> * ZILIN SONG, 16 JAN 2018
+ RDTITL> *
+  
+ CHARMM>     
+  
+ CHARMM>    BOMLev -1
+  
+ CHARMM>    FASTer 1
+ MISCOM> FAST option: ON (generic fast routines)
+  
+ CHARMM>     
+  
+ CHARMM>    ! { CHARMM MOLVIB Module is used for molecular vibrational calculation  }
+ CHARMM>     
+  
+ CHARMM>    MOLVIB -
+ CHARMM>     NDI1 45 -
+ CHARMM>     NDI2 45 -
+ CHARMM>     NDI3 64 -
+ CHARMM>     NATOM 17 -
+ CHARMM>     NOTO
+
+   >>>>>> Entering MOLVIB module of CHARMM <<<<<<
+
+
+     MLVCOM: CHARMM RTF/PSF will be ignored inside MOLVIB
+
+  MOLVIB dimensions have been set
+
+   NQ,NIC,NIC0,NAT =      45      45      64      17
+   IZMAX,MAXSYB,NGMAX,NBLMAX =      10      45      45      45
+
+  The maximum dimension has been set to NQM =          64
+
+
+
+
+      MOLVIB : PROGRAM FOR MOLECULAR VIBRATIONAL SPECTROSCOPY
+
+
+
+ GFX      0    0    0    0
+
+
+   SELECTED OPTION : VIBRATIONAL EIGENVALUE PROBLEM IN CARTESIAN COORDINATES
+
+
+ PRNT     0    0    0    0
+
+ The cartesian coordinates and mass/atomic numbers
+
+   1       -1.809014   -0.172634   -0.054348   12.011000
+   2       -2.590707    1.043626   -0.166168   12.011000
+   3       -0.677571    2.357418   -0.075520   12.011000
+   4        0.151903    1.285719    0.037247   12.011000
+   5        0.206183   -1.226130    0.110296   12.011000
+   6       -0.985841   -2.205653    0.070673   12.011000
+   7       -3.672438    0.954278   -0.248273    1.008000
+   8       -0.284739    3.367467   -0.090059    1.008000
+   9        1.233240    1.319292    0.119372    1.008000
+  10       -1.021841   -2.820996    0.979301    1.008000
+  11       -2.059477    2.239776   -0.177774   14.007000
+  12       -0.426979    0.036780    0.056457   14.007000
+  13       -2.206795   -1.411724   -0.051740   14.007000
+  14        1.400705   -1.424241    0.185741   15.999000
+  15       -0.783335   -3.015959   -1.070958   15.999000
+  16       -1.872859   -3.993738   -1.030619   15.999000
+  17       -2.621826   -3.407764   -1.277186    1.008000
+  U matrix has been read : INU =            1
+  **** Warning : PED cutoff is incorrect
+       Using default value 
+
+ The PED cutoff will be CUTPED =   0.030
+
+  The FX matrix will be scaled by FCTR =  0.89000000000000001     
+
+
+       Starting FX diagonalization 
+
+
+  **** Found            2   negative eigenvalues ****
+
+
+    Symbolic PED matrix [%] (sorted)
+
+   1     55.5   5rTor     63.   wgO15O    13.   dfC6YCZ   12.   dfC6XCZ   10.
+
+   2    111.1   wgO15O    43.   6rTor     21.   dfC6YCZ   11.   5rTor      9.
+                5rTor_     7.   dfC6XCZ    7.
+   3    133.7   rrBtf     57.   6rTor_    23.   6rPuck   -17.   5rTor_    15.
+                wagC5      9.   dfC6XCZ    5.   5rTor      5.   6rTor     -5.
+                wgO15O     5.
+   4    165.0   6rTor     56.   wgO15O    21.   5rTor     11.   5rTor_     8.
+                6rTor_    -6.   dfC6YCZ    3.
+   5    189.6   dfC6XCZ   40.   rrBtf     15.   wagC5     11.   scsO15     9.
+                6rTor_     8.   6rTor      6.   wgO15O     5.
+   6    257.2   rocC5     30.   6rDef     21.   6rDef_    17.   5rDef     11.
+                sC5-N12   10.   sC4-N12    4.   6rDef3    -3.
+   7    310.6   scsO15    33.   wgO16H    17.   sC5-C6    12.   6rTor_     6.
+                sC6-O15    5.   6rTor      4.   5rDef_     4.   wagC5      4.
+                dfC6XCZ    3.   dfC6YCZ    3.
+   8    367.0   6rTor_    97.   6rPuck   -21.   wgO16H     7.   dfC6YCZ    6.
+                5rTor_     4.   sC5-C6     4.   rocC5      4.
+   9    374.9   wgO16H    67.   scsO15    14.   6rTor_     5.   5rDef_     4.
+
+  10    428.2   6rPuck    15.   rrBtf     15.   6rTor_    12.   dfC6YCZ   11.
+                rocC5      7.   wagC5      6.   6rTor      6.   sC5-C6     6.
+                6rDef      4.   scsO15     4.   wgO15O     4.
+  11    491.7   6rPuck    28.   5rTor_    19.   6rDef      9.   sC1-C2     9.
+                6rTor_    -6.   6rDef_     5.   5rDef_     5.   6rTor      4.
+                sC5-N12    4.   rrBtf      3.   rocC5      3.   wgO16H     3.
+
+  12    515.9   5rDef     25.   6rDef_    24.   sC1-C2    14.   5rDef_    11.
+                6rDef      8.   6rPuck     4.   sC6-N13    4.
+  13    564.3   6rPuck    29.   wagC5     26.   5rDef_     9.   scsO15     7.
+                6rDef      6.   6rTor_    -6.   6rDef_     6.   5rTor_     5.
+                5rDef      4.   sC4-N12    4.
+  14    604.8   6rDef     23.   dfC6YCZ   20.   6rPuck    15.   rocC5      9.
+                scsO15     9.   5rDef_     8.   6rTor_    -4.   sC1-N12    4.
+                wagC5      3.   sC6-O15    3.
+  15    633.2   6rPuck    46.   6rDef_    15.   6rTor_   -11.   5rTor_    10.
+                6rDef      9.   5rDef      8.   5rDef_     5.   sC5-C6     3.
+                rrBtf      3.
+  16    663.1   5rTor_    23.   6rPuck    19.   6rDef_    16.   wagC5     14.
+                5rDef      6.   dfC6YCZ    5.   6rTor_    -4.   rocC5      4.
+                sC1-N12    3.
+  17    687.7   5rDef_    19.   dfC6YCZ   13.   sC5-C6    12.   sC1-N12    9.
+                6rDef_     8.   sC6-N13    8.   sC5-O14    4.   5rTor_     4.
+                wagC5      3.
+  18    744.1   wagC4     52.   wagC3     36.   wagC2      9.   rrBtf      4.
+                6rTor_    -3.
+  19    785.4   sO15-O16  13.   sC4-N12   10.   sC1-N12    9.   5rDef_     9.
+                6rDef_     8.   wagC5      8.   sC1-C2     7.   dfC6XCZ    7.
+                rocC5      7.   sC5-N12    5.
+  20    829.5   6rDef3    46.   sC5-N12   14.   6rDef_   -10.   sO15-O16   9.
+                5rDef      9.   sC3-N11    7.   sC1-N12    5.   sC1=N13    5.
+                sC6-N13    3.
+  21    838.1   wagC3     61.   wagC4     51.   6rPuck   -17.   wagC2      4.
+
+  22    859.8   wagC2     91.   wagC3     12.   6rTor_    -7.
+  23    871.1   sO15-O16  67.   dfC6XCZ   13.   wagC5      5.   6rDef3     5.
+                scsO15     4.
+  24    974.0   sC3-N11   42.   sC6-N13   15.   rocC4     10.   sC3-C4     7.
+                sC2-N11    6.   sC6-O15    3.
+  25    984.7   sC6-N13   24.   sC3-N11   11.   sC6-O15   10.   sC1-N12    9.
+                rocC5      8.   rocC4      7.   sC1-C2     5.   sC5-C6     5.
+                dfC6YCZ    4.   rocC2      3.
+  26   1009.7   sC6-N13   29.   sC5-C6    23.   6rDef3    21.   sC4-N12    6.
+                rocC6_     4.   rocC5      4.
+  27   1073.1   sC6-O15   65.   sC6-N13    9.   5rDef_     6.   sC5-C6     5.
+                rocC5      4.
+  28   1093.0   6rDef3    29.   sC5-N12   28.   sC1-C2     9.   rocC3      6.
+                sC5-C6     6.   sC3-N11    6.   sC3-C4     3.
+  29   1175.5   rocC3     27.   rocC4     21.   sC3-C4    13.   sC5-N12   13.
+                sC2-N11    6.   rocC2      5.   sC3-N11    5.   rocC6_     4.
+
+  30   1195.0   rocC6_    47.   rocC4     12.   sC4-N12   10.   sC1-C2     8.
+                5rDef      6.   sC1=N13    4.
+  31   1266.9   rocC6     65.   rocC6_    11.   rocC2      7.
+  32   1272.1   rocC6     22.   rocC6_    15.   5rDef     11.   rocC4      9.
+                rocC3      9.   rocC2      7.   sC5-C6     7.   sC4-N12    5.
+                sC5-N12    4.
+  33   1305.1   rocC2     53.   sC3-N11    9.   sC2-N11    6.   sC4-N12    6.
+                sC1-N12    6.   rocC6_     5.   sC1=N13    4.   rocC4      3.
+
+  34   1333.2   sC1-N12   31.   sC1-C2    19.   rocC3     16.   sC3-C4     7.
+                rocC4      5.   5rDef_     4.   6rDef_     4.   5rDef      3.
+                rocC2      3.
+  35   1343.3   scsO16    97.
+  36   1406.5   sC4-N12   30.   rocC3     28.   rocC4     12.   rocC2      7.
+                sC3-N11    6.   sC1-N12    4.   6rDef_     3.
+  37   1467.2   sC2-N11   60.   sC3-N11    9.   sC3-C4     8.   sC1=N13    8.
+                sC1-N12    4.   rocC2      4.
+  38   1537.6   sC3-C4    41.   sC1=N13   24.   rocC4      9.   rocC3      7.
+                sC1-N12    5.   sC2-N11    4.
+  39   1604.2   sC1=N13   41.   sC1-C2    12.   sC3-C4    11.   sC2-N11    7.
+                6rDef      5.   sC4-N12    5.   5rDef      5.   rocC2      4.
+
+  40   1741.1   sC5-O14   88.   sC5-C6     4.   5rDef_     4.
+  41   2936.2   sC6-H10  100.
+  42   3049.9   sC2-H7    99.
+  43   3086.2   sC4-H9    62.   sC3-H8    37.
+  44   3101.6   sC3-H8    62.   sC4-H9    37.
+  45   3441.9   sO16-H17 100.
+ GFX option finished
+  
+ CHARMM>     
+  
+ CHARMM>    STOP
+
+      $$$$$$  New timer profile Local node$$$$$
+
+ Total time                      0.04 Other:            0.00
+
+         $$$$$$  Average   profile $$$$$
+
+ Total time                      0.04 Other:            0.00
+
+                    NORMAL TERMINATION BY NORMAL STOP
+                    NO WARNINGS WERE ISSUED
+
+                    $$$$$ JOB ACCOUNTING INFORMATION $$$$$
+                     ELAPSED TIME:     0.05  SECONDS 
+                         CPU TIME:     0.04  SECONDS 

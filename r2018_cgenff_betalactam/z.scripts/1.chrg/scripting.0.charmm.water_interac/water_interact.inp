@@ -1,0 +1,978 @@
+* Proj Force Field Dev - cephalosporins
+* Water interaction: Fragment V.
+* unit 12: write ic for assisting IC EDIT
+* unit 69: water_interact.ene output
+* Zilin Song, 14 Jan 2019
+* 
+
+ IOFOrmat EXTEnted
+ PRNLev 6
+ BOMLev 0
+
+! { scripting logic control }
+
+ SET residue FRG5   ! name of target molecule.
+ SET isIcTest 0     ! 1 = Run script for Water creating test
+                    ! To make sure water is rightly created (existence and position).
+                    ! No interaction calculation will be done / relevent code will be jumped.
+                    ! 0 = IC edit test done & do interaction calculation.
+                    ! IC output will be jumped.
+ SET stage 4        ! 4 = hoh interac calculation basing on qm geometry.
+                    ! 5 = ... ....... ........... ...... .. mm .........
+ SET crdname fileName
+
+ SET optff ./frg5.strm           ! .strm to optimize.
+
+ ! cgenff force field directory
+ ! must have following files: 
+ ! par_all36_cgenff.prm / top_all36_cgenff.rtf
+ ! toppar_dum_noble_gases.str / toppar_water_ions.str
+ SET topparDir ./forcefield
+
+! { Initialize work directory & else }
+
+ IF @stage .eq. 4 THEN
+  SET crdname @residue.hfmini.crd   ! @residue_hfmini.crd: name of hf optimized coor file.
+ ELSE
+  SET crdname @residue.mdmini.crd   ! @residue_mdmini.crd: name of mm optimized coor file.
+ ENDIf
+
+ IF @isIcTest .eq. 1 Then
+  SET out output                  ! directory - general output files
+  SET outIcEdit output/icedit     ! directory - md minimized output files     - unit 12
+  SYSTem "mkdir -p output"           ! create directory - out
+  SYSTem "mkdir -p output/icedit"    ! create directory - outIcEdit
+ ENDIf
+ 
+ ! output ** unit 69 **
+ OPEN UNIT 69 WRITE FORM NAME @residue_water_interact.ene                  ! - unit 69
+
+! { initial variables for loop }
+
+ SET initdist 1.60               ! initial interaction distance
+ SET initener 1000.              ! loop trigger: initial energy
+ SET section voidname            ! section name  
+ SET maxdist 3.0
+
+! { read force field Cgenff force fields to support generated force field }
+
+ OPEN UNIT 10 READ CARD NAME @topparDir/top_all36_cgenff.rtf
+  READ rtf CARD UNIT 10
+  CLOSe UNIT 10
+  
+ BOMLev -2      ! required for passing NBFIX error.
+                ! NBFIX error pops up when:
+                ! No protein force field read before cgenff.
+ OPEN UNIT 10 READ CARD NAME @topparDir/par_all36_cgenff.prm
+  READ param CARD FLEX UNIT 10                ! FLEX is required for mass changed force fields.
+  CLOSe UNIT 10
+ BOMLev 0
+ 
+ STREam @topparDir/toppar_dum_noble_gases.str    ! dummy atom force field
+ STREAM @topparDir/toppar_water_ions.str         ! water tip3 force field
+
+ ! read optimized force field
+ STREam @optff
+
+! { target molecule crd & psf }
+ 
+ READ SEQUence CARD
+ * @residue
+ * 
+ 1
+ @residue
+ 
+ GENErate @residue FIRSt none LAST none WARN SETUp
+ 
+ OPEN UNIT 20 READ FORM NAME @crdname
+  READ COOR CARD UNIT 20 APPEnd
+  CLOSE UNIT 20
+
+! { dipole moment of molecule }
+
+ COOR DIPOLE OXYZ SELEct SEGId @residue END
+
+ ECHU 69                             ! write file @residue_water_interact.ene
+ ECHO @residue water interaction
+ IF @stage .eq 4 THEN
+  ECHO Method: Using HF Geometry.
+ ENDIf
+ ECHO QM dipole (Debye)
+ ECHO HF/6-31G(d) dipole:   X=-0.3062   Y=-0.0012   Z=0.5545  Tot=0.6334
+ ECHO Empirical dipole:     X=?XDIP    Y=?YDIP    Z=?ZDIP    Tot=?RDIP
+ 
+ IC DELEte SELEct all END
+
+! { Write psf & crd for assisting ic edit. These files are used as reference. }
+
+ IF isIcTest .eq. 0 GOTO jumpIcOut_0
+  OPEN UNIT 12 WRITe CARD NAME @outIcEdit/@residue_nowater.pdb
+  WRITe coor pdb CARD UNIT 12
+ LABEl jumpIcOut_0
+
+! { (2) C1---HOH_2 interact }
+
+  SET section C1_HOH_2                      ! ####
+   ! { Append psf for water}
+   ! water.
+    READ SEQUence CARD
+    * Water
+    * 
+    1
+    TIP3
+
+    GENErate TIP3 FIRSt none LAST none WARN SETUp NOANgle NODIhedral
+    JOIN @residue TIP3 RENUmber
+ 
+  ! { Create coor for tip3 using IC EDIT }
+ 
+    IC EDIT             ! #### IC should be edited
+    ! { Syntax: for atom-specify: 
+    !       segid resid atomName / resnumber atomName }
+    !       resnumber atomName is used in the following command}
+    ! { PNM12 1 = 1 /pt3 }
+    ! { PNM12 2 = 2 /water }
+  
+      ! H1 - HOH spec H1 - O1 - PNM PT3
+      dihe 2 H1 1 C1 1 S5 1 C4 91.39431
+      dist 2 H1 1 C1 2.1
+      angl 2 H1 1 C1 1 S5 94.99722
+
+      ! O - HOH spec - must be dependent only to H1
+      dihe 2 OH2 2 H1 1 C1 1 S5 180.
+      dist 2 OH2 2 H1 0.9572
+      angl 2 OH2 2 H1 1 C1 180.
+
+      ! H2 - HOH spec - must be dependent only to H1 OH2
+      dihe 2 H2 2 OH2 2 H1 1 S5 0.
+      dist 2 H2 2 OH2  0.9572
+      angl 2 H2 2 OH2 2 H1 104.52
+
+    END
+    
+    IC FILL PREServe
+    IC PRINt
+    IC BUILd
+
+    IF isIcTest .eq. 0 GOTO jumpIcOut_2     ! jump ic output if not ic test run     ! ####
+      OPEN UNIT 12 WRITe CARD NAME @outIcEdit/@section_edited.pdb
+        WRITe coor pdb CARD UNIT 12
+      IC EDIT
+        DISTant 2 H1 1 C1 15.                                                        ! ####
+      END 
+      COOR INIT SELEct RESName TIP3 .or. RESName DUM END
+      IC BUILd 
+      OPEN UNIT 12 WRITe CARD NAME @outIcEdit/@section_edited_hoh_moved.pdb
+        WRITe coor pdb CARD UNIT 12
+    LABEl jumpIcOut_2                                                               ! ####
+  
+    IF isIcTest .eq. 1 GOTO done_sec_2      ! jump this section if is ic test run   ! ####
+    ! { Inter Calculation Starts. }
+    ! { Loop preparation: Output for O1-HOH PEF }
+      SET mindist @initdist
+      SET minener @initener
+      UPDAte CUTNb 999.0 CTOFnb 998.0 CTONnb 997.0     ! interaction calculation criteria 
+
+      ! { PEF calculation loop }
+      LABEl loop_2                                   ! ####
+        ! {Change HOH-H1...C1-FRG5 distance}
+        IC EDIT
+          DISTant 2 H1 1 C1 @mindist                 ! ####
+        END
+        COOR INIT SELEct RESName TIP3 END
+        IC BUILd
+        
+        ! { check CHARMM toturial: by-version/c40b1/params/doc/energy/ }
+        INTERaction - 
+          SELEct RESName @residue END -
+          SELEct RESName TIP3 END
+     
+        SET totener ?ener           ! total potential energy
+        SET vdwener ?vdw            ! van der waal energy
+        SET elecener ?elec          ! electrostatic energy
+
+        ! when interaction energy starts to increase: stop 
+        ! interaction energy always first go up then go down
+        IF @minener .lt. @totener GOTO done_2        ! ####
+        SET minener @totener
+        INCRement mindist by 0.01
+        IF @mindist .lt. @maxdist GOTO loop_2        ! ####
+
+      LABEl done_2                                   ! ####
+
+  ! { Accumulate Statistics } ! ####
+  SET diffener 999.9
+  SET diffdist 999.9
+  SET qmener 2.1044553       ! obtained from QM calculation. scaled by 1.16 more neutral compound
+  SET qmdist 2.92479          ! obtained from QM calculation
+  CALC diffener = @minener - @qmener
+  CALC diffdist = @mindist - @qmdist
+
+  ! { Result for interaction C1_HOH_2 }      #### & ECHO 1)   
+  ECHU 69
+  ECHO 2) @section                
+  ECHO qm. tote: @qmener dist: @qmdist
+  ECHO emp. tote: @minener dist: @mindist vdwe: @vdwener elece: @elecener
+  ECHO ene diff: @diffener dist diff: @diffdist
+
+  LABEl done_sec_2             ! ####
+  DELEte ATOM SELEct RESName TIP3 .or. RESName DUM END 
+
+! { (3) N2---HOH interact }
+
+  SET section N2_HOH                      ! ####
+   ! { Append psf for water}
+   ! water.
+    READ SEQUence CARD
+    * Water
+    * 
+    1
+    TIP3
+
+    GENErate TIP3 FIRSt none LAST none WARN SETUp NOANgle NODIhedral
+    JOIN @residue TIP3 RENUmber
+ 
+  ! { Create coor for tip3 using IC EDIT }
+ 
+    IC EDIT             ! #### IC should be edited
+    ! { Syntax: for atom-specify: 
+    !       segid resid atomName / resnumber atomName }
+    !       resnumber atomName is used in the following command}
+    ! { PNM12 1 = 1 /pt3 }
+    ! { PNM12 2 = 2 /water }
+  
+      ! H1 - HOH spec H1 - O1 - PNM PT3
+      dihe 2 H1 1 N2 1 C1 1 N6 0.
+      dist 2 H1 1 N2 2.1
+      angl 2 H1 1 N2 1 C1 125.06001
+
+      ! O - HOH spec - must be dependent only to H1
+      dihe 2 OH2 2 H1 1 N2 1 C1 180.
+      dist 2 OH2 2 H1 0.9572
+      angl 2 OH2 2 H1 1 N2 180.
+
+      ! H2 - HOH spec - must be dependent only to H1 OH2
+      dihe 2 H2 2 OH2 2 H1 1 C1 90.
+      dist 2 H2 2 OH2  0.9572
+      angl 2 H2 2 OH2 2 H1 104.52
+
+    END
+    
+    IC FILL PREServe
+    IC PRINt
+    IC BUILd
+
+    IF isIcTest .eq. 0 GOTO jumpIcOut_3     ! jump ic output if not ic test run     ! ####
+      OPEN UNIT 12 WRITe CARD NAME @outIcEdit/@section_edited.pdb
+        WRITe coor pdb CARD UNIT 12
+      IC EDIT
+        DISTant 2 H1 1 N2 15.                                                        ! ####
+      END 
+      COOR INIT SELEct RESName TIP3 .or. RESName DUM END
+      IC BUILd 
+      OPEN UNIT 12 WRITe CARD NAME @outIcEdit/@section_edited_hoh_moved.pdb
+        WRITe coor pdb CARD UNIT 12
+    LABEl jumpIcOut_3                                                               ! ####
+  
+    IF isIcTest .eq. 1 GOTO done_sec_3      ! jump this section if is ic test run   ! ####
+    ! { Inter Calculation Starts. }
+    ! { Loop preparation: Output for O1-HOH PEF }
+      SET mindist @initdist
+      SET minener @initener
+      UPDAte CUTNb 999.0 CTOFnb 998.0 CTONnb 997.0     ! interaction calculation criteria 
+
+      ! { PEF calculation loop }
+      LABEl loop_3                                   ! ####
+        ! {Change HOH-H1...C1-FRG5 distance}
+        IC EDIT
+          DISTant 2 H1 1 N2 @mindist                 ! ####
+        END
+        COOR INIT SELEct RESName TIP3 END
+        IC BUILd
+        
+        ! { check CHARMM toturial: by-version/c40b1/params/doc/energy/ }
+        INTERaction - 
+          SELEct RESName @residue END -
+          SELEct RESName TIP3 END
+     
+        SET totener ?ener           ! total potential energy
+        SET vdwener ?vdw            ! van der waal energy
+        SET elecener ?elec          ! electrostatic energy
+
+        ! when interaction energy starts to increase: stop 
+        ! interaction energy always first go up then go down
+        IF @minener .lt. @totener GOTO done_3        ! ####
+        SET minener @totener
+        INCRement mindist by 0.01
+        IF @mindist .lt. @maxdist GOTO loop_3        ! ####
+
+      LABEl done_3                                   ! ####
+
+  ! { Accumulate Statistics } ! ####
+  SET diffener 999.9
+  SET diffdist 999.9
+  SET qmener -4.3847250      ! obtained from QM calculation. scaled by 1.16 more neutral compound
+  SET qmdist 2.08081          ! obtained from QM calculation
+  CALC diffener = @minener - @qmener
+  CALC diffdist = @mindist - @qmdist
+
+  ! { Result for interaction N2_HOH }      #### & ECHO 1)   
+  ECHU 69
+  ECHO 3) @section                
+  ECHO qm. tote: @qmener dist: @qmdist
+  ECHO emp. tote: @minener dist: @mindist vdwe: @vdwener elece: @elecener
+  ECHO ene diff: @diffener dist diff: @diffdist
+
+  LABEl done_sec_3             ! ####
+  DELEte ATOM SELEct RESName TIP3 .or. RESName DUM END 
+
+! { (4) C3H7---HOH interact }
+
+  SET section C3_HOH                      ! ####
+   ! { Append psf for water}
+   ! water.
+    READ SEQUence CARD
+    * Water
+    * 
+    1
+    TIP3
+
+    GENErate TIP3 FIRSt none LAST none WARN SETUp NOANgle NODIhedral
+    JOIN @residue TIP3 RENUmber
+ 
+  ! { Create coor for tip3 using IC EDIT }
+ 
+    IC EDIT             ! #### IC should be edited
+    ! { Syntax: for atom-specify: 
+    !       segid resid atomName / resnumber atomName }
+    !       resnumber atomName is used in the following command}
+    ! { PNM12 1 = 1 /pt3 }
+    ! { PNM12 2 = 2 /water }
+
+      ! O - HOH spec - must be dependent only to H1
+      dihe 2 OH2 1 H7 1 C3 1 N2 0.
+      dist 2 OH2 1 H7 2.1
+      angl 2 OH2 1 H7 1 C3 180.
+
+      ! H1 - HOH spec H1 - O1 - PNM PT3
+      dihe 2 H1 2 OH2 1 H7 1 N2 0.
+      dist 2 H1 2 OH2 0.9572
+      angl 2 H1 2 OH2 1 H7 127.73999
+
+      ! H2 - HOH spec - must be dependent only to H1 OH2
+      dihe 2 H2 2 OH2 1 H7 1 N2 180.
+      dist 2 H2 2 OH2 0.9572
+      angl 2 H2 2 OH2 1 H7 127.73999
+
+    END
+    
+    IC FILL PREServe
+    IC PRINt
+    IC BUILd
+
+    IF isIcTest .eq. 0 GOTO jumpIcOut_4     ! jump ic output if not ic test run     ! ####
+      OPEN UNIT 12 WRITe CARD NAME @outIcEdit/@section_edited.pdb
+        WRITe coor pdb CARD UNIT 12
+      IC EDIT
+        DISTant 2 OH2 1 H7 15.                                                        ! ####
+      END 
+      COOR INIT SELEct RESName TIP3 .or. RESName DUM END
+      IC BUILd 
+      OPEN UNIT 12 WRITe CARD NAME @outIcEdit/@section_edited_hoh_moved.pdb
+        WRITe coor pdb CARD UNIT 12
+    LABEl jumpIcOut_4                                                               ! ####
+  
+    IF isIcTest .eq. 1 GOTO done_sec_4      ! jump this section if is ic test run   ! ####
+    ! { Inter Calculation Starts. }
+    ! { Loop preparation: Output for O1-HOH PEF }
+      SET mindist @initdist
+      SET minener @initener
+      UPDAte CUTNb 999.0 CTOFnb 998.0 CTONnb 997.0     ! interaction calculation criteria 
+
+      ! { PEF calculation loop }
+      LABEl loop_4                                    ! ####
+        ! {Change HOH-H1...C1-FRG5 distance}
+        IC EDIT
+          DISTant 2 OH2 1 H7 @mindist                 ! ####
+        END
+        COOR INIT SELEct RESName TIP3 END
+        IC BUILd
+        
+        ! { check CHARMM toturial: by-version/c40b1/params/doc/energy/ }
+        INTERaction - 
+          SELEct RESName @residue END -
+          SELEct RESName TIP3 END
+     
+        SET totener ?ener           ! total potential energy
+        SET vdwener ?vdw            ! van der waal energy
+        SET elecener ?elec          ! electrostatic energy
+
+        ! when interaction energy starts to increase: stop 
+        ! interaction energy always first go up then go down
+        IF @minener .lt. @totener GOTO done_4        ! ####
+        SET minener @totener
+        INCRement mindist by 0.01
+        IF @mindist .lt. @maxdist GOTO loop_4        ! ####
+
+      LABEl done_4                                   ! ####
+
+  ! { Accumulate Statistics } ! ####
+  SET diffener 999.9
+  SET diffdist 999.9
+  SET qmener 1.0833680       ! obtained from QM calculation. scaled by 1.16 more neutral compound
+  SET qmdist 2.52812          ! obtained from QM calculation
+  CALC diffener = @minener - @qmener
+  CALC diffdist = @mindist - @qmdist
+
+  ! { Result for interaction C3H7_HOH }      #### & ECHO 1)   
+  ECHU 69
+  ECHO 4) @section                
+  ECHO qm. tote: @qmener dist: @qmdist
+  ECHO emp. tote: @minener dist: @mindist vdwe: @vdwener elece: @elecener
+  ECHO ene diff: @diffener dist diff: @diffdist
+
+  LABEl done_sec_4             ! ####
+  DELEte ATOM SELEct RESName TIP3 .or. RESName DUM END 
+
+! { (5) C4H8---HOH interact }
+
+  SET section C4_HOH                      ! ####
+   ! { Append psf for water}
+   ! water.
+    READ SEQUence CARD
+    * Water
+    * 
+    1
+    TIP3
+
+    GENErate TIP3 FIRSt none LAST none WARN SETUp NOANgle NODIhedral
+    JOIN @residue TIP3 RENUmber
+ 
+  ! { Create coor for tip3 using IC EDIT }
+ 
+    IC EDIT             ! #### IC should be edited
+    ! { Syntax: for atom-specify: 
+    !       segid resid atomName / resnumber atomName }
+    !       resnumber atomName is used in the following command}
+    ! { PNM12 1 = 1 /pt3 }
+    ! { PNM12 2 = 2 /water }
+
+      ! O - HOH spec - must be dependent only to H1
+      dihe 2 OH2 1 H8 1 C4 1 C3 0.
+      dist 2 OH2 1 H8 2.1
+      angl 2 OH2 1 H8 1 C4 180.
+
+      ! H1 - HOH spec H1 - O1 - PNM PT3
+      dihe 2 H1 2 OH2 1 H8 1 C3 0.
+      dist 2 H1 2 OH2 0.9572
+      angl 2 H1 2 OH2 1 H8 127.74
+
+      ! H2 - HOH spec - must be dependent only to H1 OH2
+      dihe 2 H2 2 OH2 1 H8 1 C3 180.
+      dist 2 H2 2 OH2 0.9572
+      angl 2 H2 2 OH2 1 H8 127.74
+
+    END
+    
+    IC FILL PREServe
+    IC PRINt
+    IC BUILd
+
+    IF isIcTest .eq. 0 GOTO jumpIcOut_5     ! jump ic output if not ic test run     ! ####
+      OPEN UNIT 12 WRITe CARD NAME @outIcEdit/@section_edited.pdb
+        WRITe coor pdb CARD UNIT 12
+      IC EDIT
+        DISTant 2 OH2 1 H8 15.                                                        ! ####
+      END 
+      COOR INIT SELEct RESName TIP3 .or. RESName DUM END
+      IC BUILd 
+      OPEN UNIT 12 WRITe CARD NAME @outIcEdit/@section_edited_hoh_moved.pdb
+        WRITe coor pdb CARD UNIT 12
+    LABEl jumpIcOut_5                                                               ! ####
+  
+    IF isIcTest .eq. 1 GOTO done_sec_5      ! jump this section if is ic test run   ! ####
+    ! { Inter Calculation Starts. }
+    ! { Loop preparation: Output for O1-HOH PEF }
+      SET mindist @initdist
+      SET minener @initener
+      UPDAte CUTNb 999.0 CTOFnb 998.0 CTONnb 997.0     ! interaction calculation criteria 
+
+      ! { PEF calculation loop }
+      LABEl loop_5                                    ! ####
+        ! {Change HOH-H1...C1-FRG5 distance}
+        IC EDIT
+          DISTant 2 OH2 1 H8 @mindist                 ! ####
+        END
+        COOR INIT SELEct RESName TIP3 END
+        IC BUILd
+        
+        ! { check CHARMM toturial: by-version/c40b1/params/doc/energy/ }
+        INTERaction - 
+          SELEct RESName @residue END -
+          SELEct RESName TIP3 END
+     
+        SET totener ?ener           ! total potential energy
+        SET vdwener ?vdw            ! van der waal energy
+        SET elecener ?elec          ! electrostatic energy
+
+        ! when interaction energy starts to increase: stop 
+        ! interaction energy always first go up then go down
+        IF @minener .lt. @totener GOTO done_5        ! ####
+        SET minener @totener
+        INCRement mindist by 0.01
+        IF @mindist .lt. @maxdist GOTO loop_5        ! ####
+
+      LABEl done_5                                   ! ####
+
+  ! { Accumulate Statistics } ! ####
+  SET diffener 999.9
+  SET diffdist 999.9
+  SET qmener 0.41628980       ! obtained from QM calculation. scaled by 1.16 more neutral compound
+  SET qmdist 2.46813          ! obtained from QM calculation
+  CALC diffener = @minener - @qmener
+  CALC diffdist = @mindist - @qmdist
+
+  ! { Result for interaction C4H8_HOH }      #### & ECHO 1)   
+  ECHU 69
+  ECHO 5) @section                
+  ECHO qm. tote: @qmener dist: @qmdist
+  ECHO emp. tote: @minener dist: @mindist vdwe: @vdwener elece: @elecener
+  ECHO ene diff: @diffener dist diff: @diffdist
+
+  LABEl done_sec_5             ! ####
+  DELEte ATOM SELEct RESName TIP3 .or. RESName DUM END 
+
+! { (6) S5---HOH interact }
+
+  SET section S5_HOH                      ! ####
+   ! { Append psf for water}
+   ! water.
+    READ SEQUence CARD
+    * Water
+    * 
+    1
+    TIP3
+
+    GENErate TIP3 FIRSt none LAST none WARN SETUp NOANgle NODIhedral
+    JOIN @residue TIP3 RENUmber
+ 
+  ! { Create coor for tip3 using IC EDIT }
+ 
+    IC EDIT             ! #### IC should be edited
+    ! { Syntax: for atom-specify: 
+    !       segid resid atomName / resnumber atomName }
+    !       resnumber atomName is used in the following command}
+    ! { PNM12 1 = 1 /pt3 }
+    ! { PNM12 2 = 2 /water }
+
+      ! H1 - HOH spec - must be dependent only to H1
+      dihe 2 H1 1 S5 1 C4 1 C3 -180.
+      dist 2 H1 1 S5 2.1
+      angl 2 H1 1 S5 1 C4 135.62
+
+      ! OH2 - HOH spec H1 - O1 - PNM PT3
+      dihe 2 OH2 2 H1 1 S5 1 C4 180.
+      dist 2 OH2 2 H1 0.9572
+      angl 2 OH2 2 H1 1 S5 180.
+
+      ! H2 - HOH spec - must be dependent only to H1 OH2
+      dihe 2 H2 2 OH2 2 H1 1 C4 90.
+      dist 2 H2 2 OH2 0.9572
+      angl 2 H2 2 OH2 2 H1 104.52
+
+    END
+    
+    IC FILL PREServe
+    IC PRINt
+    IC BUILd
+
+    IF isIcTest .eq. 0 GOTO jumpIcOut_6     ! jump ic output if not ic test run     ! ####
+      OPEN UNIT 12 WRITe CARD NAME @outIcEdit/@section_edited.pdb
+        WRITe coor pdb CARD UNIT 12
+      IC EDIT
+        DISTant 2 H1 1 S5 15.                                                        ! ####
+      END 
+      COOR INIT SELEct RESName TIP3 .or. RESName DUM END
+      IC BUILd 
+      OPEN UNIT 12 WRITe CARD NAME @outIcEdit/@section_edited_hoh_moved.pdb
+        WRITe coor pdb CARD UNIT 12
+    LABEl jumpIcOut_6                                                               ! ####
+  
+    IF isIcTest .eq. 1 GOTO done_sec_6      ! jump this section if is ic test run   ! ####
+    ! { Inter Calculation Starts. }
+    ! { Loop preparation: Output for O1-HOH PEF }
+      SET mindist @initdist
+      SET minener @initener
+      UPDAte CUTNb 999.0 CTOFnb 998.0 CTONnb 997.0     ! interaction calculation criteria 
+
+      ! { PEF calculation loop }
+      LABEl loop_6                                    ! ####
+        ! {Change HOH-H1...C1-FRG5 distance}
+        IC EDIT
+          DISTant 2 H1 1 S5 @mindist                 ! ####
+        END
+        COOR INIT SELEct RESName TIP3 END
+        IC BUILd
+        
+        ! { check CHARMM toturial: by-version/c40b1/params/doc/energy/ }
+        INTERaction - 
+          SELEct RESName @residue END -
+          SELEct RESName TIP3 END
+     
+        SET totener ?ener           ! total potential energy
+        SET vdwener ?vdw            ! van der waal energy
+        SET elecener ?elec          ! electrostatic energy
+
+        ! when interaction energy starts to increase: stop 
+        ! interaction energy always first go up then go down
+        IF @minener .lt. @totener GOTO done_6        ! ####
+        SET minener @totener
+        INCRement mindist by 0.01
+        IF @mindist .lt. @maxdist GOTO loop_6        ! ####
+
+      LABEl done_6                                   ! ####
+
+  ! { Accumulate Statistics } ! ####
+  SET diffener 999.9
+  SET diffdist 999.9
+  SET qmener 1.9734249       ! obtained from QM calculation. scaled by 1.16 more neutral compound
+  SET qmdist 3.00907          ! obtained from QM calculation
+  CALC diffener = @minener - @qmener
+  CALC diffdist = @mindist - @qmdist
+
+  ! { Result for interaction S5_HOH }      #### & ECHO 1)   
+  ECHU 69
+  ECHO 6) @section                
+  ECHO qm. tote: @qmener dist: @qmdist
+  ECHO emp. tote: @minener dist: @mindist vdwe: @vdwener elece: @elecener
+  ECHO ene diff: @diffener dist diff: @diffdist
+
+  LABEl done_sec_6             ! ####
+  DELEte ATOM SELEct RESName TIP3 .or. RESName DUM END 
+
+! { (7) N6---HOH interact }
+
+  SET section N6_HOH                      ! ####
+   ! { Append psf for water}
+   ! water.
+    READ SEQUence CARD
+    * Water
+    * 
+    1
+    TIP3
+
+    GENErate TIP3 FIRSt none LAST none WARN SETUp NOANgle NODIhedral
+    JOIN @residue TIP3 RENUmber
+ 
+  ! { Create coor for tip3 using IC EDIT }
+ 
+    IC EDIT             ! #### IC should be edited
+    ! { Syntax: for atom-specify: 
+    !       segid resid atomName / resnumber atomName }
+    !       resnumber atomName is used in the following command}
+    ! { PNM12 1 = 1 /pt3 }
+    ! { PNM12 2 = 2 /water }
+
+      ! H1 - HOH spec - must be dependent only to H1
+      dihe 2 H1 1 N6 1 C1 1 S5 71.55833
+      dist 2 H1 1 N6 2.1
+      angl 2 H1 1 N6 1 C1 90.
+
+      ! OH2 - HOH spec H1 - O1 - PNM PT3
+      dihe 2 OH2 2 H1 1 N6 1 S5 -180.
+      dist 2 OH2 2 H1 0.9572
+      angl 2 OH2 2 H1 1 N6 176.25631
+
+      ! H2 - HOH spec - must be dependent only to H1 OH2
+      dihe 2 H2 2 OH2 2 H1 1 C1 180.
+      dist 2 H2 2 OH2 0.9572
+      angl 2 H2 2 OH2 2 H1 104.52
+
+    END
+    
+    IC FILL PREServe
+    IC PRINt
+    IC BUILd
+
+    IF isIcTest .eq. 0 GOTO jumpIcOut_7     ! jump ic output if not ic test run     ! ####
+      OPEN UNIT 12 WRITe CARD NAME @outIcEdit/@section_edited.pdb
+        WRITe coor pdb CARD UNIT 12
+      IC EDIT
+        DISTant 2 H1 1 N6 15.                                                       ! ####
+      END 
+      COOR INIT SELEct RESName TIP3 .or. RESName DUM END
+      IC BUILd 
+      OPEN UNIT 12 WRITe CARD NAME @outIcEdit/@section_edited_hoh_moved.pdb
+        WRITe coor pdb CARD UNIT 12
+    LABEl jumpIcOut_7                                                               ! ####
+  
+    IF isIcTest .eq. 1 GOTO done_sec_7      ! jump this section if is ic test run   ! ####
+    ! { Inter Calculation Starts. }
+    ! { Loop preparation: Output for O1-HOH PEF }
+      SET mindist @initdist
+      SET minener @initener
+      UPDAte CUTNb 999.0 CTOFnb 998.0 CTONnb 997.0     ! interaction calculation criteria 
+
+      ! { PEF calculation loop }
+      LABEl loop_7                                     ! ####
+        ! {Change HOH-H1...C1-FRG5 distance}
+        IC EDIT
+          DISTant 2 H1 1 N6 @mindist                   ! ####
+        END
+        COOR INIT SELEct RESName TIP3 END
+        IC BUILd
+        
+        ! { check CHARMM toturial: by-version/c40b1/params/doc/energy/ }
+        INTERaction - 
+          SELEct RESName @residue END -
+          SELEct RESName TIP3 END
+     
+        SET totener ?ener           ! total potential energy
+        SET vdwener ?vdw            ! van der waal energy
+        SET elecener ?elec          ! electrostatic energy
+
+        ! when interaction energy starts to increase: stop 
+        ! interaction energy always first go up then go down
+        IF @minener .lt. @totener GOTO done_7        ! ####
+        SET minener @totener
+        INCRement mindist by 0.01
+        IF @mindist .lt. @maxdist GOTO loop_7        ! ####
+
+      LABEl done_7                                   ! ####
+
+  ! { Accumulate Statistics } ! ####
+  SET diffener 999.9
+  SET diffdist 999.9
+  SET qmener 0.1196648       ! obtained from QM calculation. scaled by 1.16 more neutral compound
+  SET qmdist 2.38094          ! obtained from QM calculation
+  CALC diffener = @minener - @qmener
+  CALC diffdist = @mindist - @qmdist
+
+  ! { Result for interaction N6_HOH }      #### & ECHO 1)   
+  ECHU 69
+  ECHO 7) @section                
+  ECHO qm. tote: @qmener dist: @qmdist
+  ECHO emp. tote: @minener dist: @mindist vdwe: @vdwener elece: @elecener
+  ECHO ene diff: @diffener dist diff: @diffdist
+
+  LABEl done_sec_7             ! ####
+  DELEte ATOM SELEct RESName TIP3 .or. RESName DUM END 
+
+! { (8) N6H9---HOH interact }
+
+  SET section N6H9_HOH                      ! ####
+   ! { Append psf for water}
+   ! water.
+    READ SEQUence CARD
+    * Water
+    * 
+    1
+    TIP3
+
+    GENErate TIP3 FIRSt none LAST none WARN SETUp NOANgle NODIhedral
+    JOIN @residue TIP3 RENUmber
+ 
+  ! { Create coor for tip3 using IC EDIT }
+ 
+    IC EDIT             ! #### IC should be edited
+    ! { Syntax: for atom-specify: 
+    !       segid resid atomName / resnumber atomName }
+    !       resnumber atomName is used in the following command}
+    ! { PNM12 1 = 1 /pt3 }
+    ! { PNM12 2 = 2 /water }
+
+      ! OH2 - HOH spec - must be dependent only to H1
+      dihe 2 OH2 1 H9 1 N6 1 C1 0.
+      dist 2 OH2 1 H9 2.1
+      angl 2 OH2 1 H9 1 N6 180.
+
+      ! H1 - HOH spec H1 - O1 - PNM PT3
+      dihe 2 H1 2 OH2 1 H9 1 C1 -25.82799
+      dist 2 H1 2 OH2 0.9572
+      angl 2 H1 2 OH2 1 H9 127.74
+
+      ! H2 - HOH spec - must be dependent only to H1 OH2
+      dihe 2 H2 2 OH2 1 H9 1 C1 154.17202
+      dist 2 H2 2 OH2 0.9572
+      angl 2 H2 2 OH2 1 H9 127.74
+
+    END
+    
+    IC FILL PREServe
+    IC PRINt
+    IC BUILd
+
+    IF isIcTest .eq. 0 GOTO jumpIcOut_8     ! jump ic output if not ic test run     ! ####
+      OPEN UNIT 12 WRITe CARD NAME @outIcEdit/@section_edited.pdb
+        WRITe coor pdb CARD UNIT 12
+      IC EDIT
+        DISTant 2 OH2 1 H9 15.                                                        ! ####
+      END 
+      COOR INIT SELEct RESName TIP3 .or. RESName DUM END
+      IC BUILd 
+      OPEN UNIT 12 WRITe CARD NAME @outIcEdit/@section_edited_hoh_moved.pdb
+        WRITe coor pdb CARD UNIT 12
+    LABEl jumpIcOut_8                                                               ! ####
+  
+    IF isIcTest .eq. 1 GOTO done_sec_8      ! jump this section if is ic test run   ! ####
+    ! { Inter Calculation Starts. }
+    ! { Loop preparation: Output for O1-HOH PEF }
+      SET mindist @initdist
+      SET minener @initener
+      UPDAte CUTNb 999.0 CTOFnb 998.0 CTONnb 997.0     ! interaction calculation criteria 
+
+      ! { PEF calculation loop }
+      LABEl loop_8                                    ! ####
+        ! {Change HOH-H1...C1-FRG5 distance}
+        IC EDIT
+          DISTant 2 OH2 1 H9 @mindist                 ! ####
+        END
+        COOR INIT SELEct RESName TIP3 END
+        IC BUILd
+        
+        ! { check CHARMM toturial: by-version/c40b1/params/doc/energy/ }
+        INTERaction - 
+          SELEct RESName @residue END -
+          SELEct RESName TIP3 END
+     
+        SET totener ?ener           ! total potential energy
+        SET vdwener ?vdw            ! van der waal energy
+        SET elecener ?elec          ! electrostatic energy
+
+        ! when interaction energy starts to increase: stop 
+        ! interaction energy always first go up then go down
+        IF @minener .lt. @totener GOTO done_8        ! ####
+        SET minener @totener
+        INCRement mindist by 0.01
+        IF @mindist .lt. @maxdist GOTO loop_8        ! ####
+
+      LABEl done_8                                   ! ####
+
+  ! { Accumulate Statistics } ! ####
+  SET diffener 999.9
+  SET diffdist 999.9
+  SET qmener -1.9560962      ! obtained from QM calculation. scaled by 1.16 more neutral compound
+  SET qmdist 2.07126          ! obtained from QM calculation
+  CALC diffener = @minener - @qmener
+  CALC diffdist = @mindist - @qmdist
+
+  ! { Result for interaction N6H9_HOH }      #### & ECHO 1)   
+  ECHU 69
+  ECHO 8) @section                
+  ECHO qm. tote: @qmener dist: @qmdist
+  ECHO emp. tote: @minener dist: @mindist vdwe: @vdwener elece: @elecener
+  ECHO ene diff: @diffener dist diff: @diffdist
+
+  LABEl done_sec_8             ! ####
+  DELEte ATOM SELEct RESName TIP3 .or. RESName DUM END 
+! { (9) N6H10---HOH interact }
+
+  SET section N6H10_HOH                      ! ####
+   ! { Append psf for water}
+   ! water.
+    READ SEQUence CARD
+    * Water
+    * 
+    1
+    TIP3
+
+    GENErate TIP3 FIRSt none LAST none WARN SETUp NOANgle NODIhedral
+    JOIN @residue TIP3 RENUmber
+ 
+  ! { Create coor for tip3 using IC EDIT }
+ 
+    IC EDIT             ! #### IC should be edited
+    ! { Syntax: for atom-specify: 
+    !       segid resid atomName / resnumber atomName }
+    !       resnumber atomName is used in the following command}
+    ! { PNM12 1 = 1 /pt3 }
+    ! { PNM12 2 = 2 /water }
+
+      ! OH2 - HOH spec - must be dependent only to H1
+      dihe 2 OH2 1 H10 1 N6 1 C1 -19.77465
+      dist 2 OH2 1 H10 2.1
+      angl 2 OH2 1 H10 1 N6 180.
+
+      ! H1 - HOH spec H1 - O1 - PNM PT3
+      dihe 2 H1 2 OH2 1 H10 1 C1 -154.172
+      dist 2 H1 2 OH2 0.9572
+      angl 2 H1 2 OH2 1 H10 127.74
+
+      ! H2 - HOH spec - must be dependent only to H1 OH2
+      dihe 2 H2 2 OH2 1 H10 1 C1 25.82809
+      dist 2 H2 2 OH2 0.9572
+      angl 2 H2 2 OH2 1 H10 127.74
+
+    END
+    
+    IC FILL PREServe
+    IC PRINt
+    IC BUILd
+
+    IF isIcTest .eq. 0 GOTO jumpIcOut_9     ! jump ic output if not ic test run     ! ####
+      OPEN UNIT 12 WRITe CARD NAME @outIcEdit/@section_edited.pdb
+        WRITe coor pdb CARD UNIT 12
+      IC EDIT
+        DISTant 2 OH2 1 H10 15.                                                     ! ####
+      END 
+      COOR INIT SELEct RESName TIP3 .or. RESName DUM END
+      IC BUILd 
+      OPEN UNIT 12 WRITe CARD NAME @outIcEdit/@section_edited_hoh_moved.pdb
+        WRITe coor pdb CARD UNIT 12
+    LABEl jumpIcOut_9                                                               ! ####
+  
+    IF isIcTest .eq. 1 GOTO done_sec_9      ! jump this section if is ic test run   ! ####
+    ! { Inter Calculation Starts. }
+    ! { Loop preparation: Output for O1-HOH PEF }
+      SET mindist @initdist
+      SET minener @initener
+      UPDAte CUTNb 999.0 CTOFnb 998.0 CTONnb 997.0     ! interaction calculation criteria 
+
+      ! { PEF calculation loop }
+      LABEl loop_9                                    ! ####
+        ! {Change HOH-H1...C1-FRG5 distance}
+        IC EDIT
+          DISTant 2 OH2 1 H10 @mindist                 ! ####
+        END
+        COOR INIT SELEct RESName TIP3 END
+        IC BUILd
+        
+        ! { check CHARMM toturial: by-version/c40b1/params/doc/energy/ }
+        INTERaction - 
+          SELEct RESName @residue END -
+          SELEct RESName TIP3 END
+     
+        SET totener ?ener           ! total potential energy
+        SET vdwener ?vdw            ! van der waal energy
+        SET elecener ?elec          ! electrostatic energy
+
+        ! when interaction energy starts to increase: stop 
+        ! interaction energy always first go up then go down
+        IF @minener .lt. @totener GOTO done_9        ! ####
+        SET minener @totener
+        INCRement mindist by 0.01
+        IF @mindist .lt. @maxdist GOTO loop_9        ! ####
+
+      LABEl done_9                                   ! ####
+
+  ! { Accumulate Statistics } ! ####
+  SET diffener 999.9
+  SET diffdist 999.9
+  SET qmener -2.92854238      ! obtained from QM calculation. scaled by 1.16 more neutral compound
+  SET qmdist 2.10740          ! obtained from QM calculation
+  CALC diffener = @minener - @qmener
+  CALC diffdist = @mindist - @qmdist
+
+  ! { Result for interaction N6H9_HOH }      #### & ECHO 1)   
+  ECHU 69
+  ECHO 9) @section                
+  ECHO qm. tote: @qmener dist: @qmdist
+  ECHO emp. tote: @minener dist: @mindist vdwe: @vdwener elece: @elecener
+  ECHO ene diff: @diffener dist diff: @diffdist
+
+  LABEl done_sec_9             ! ####
+  DELEte ATOM SELEct RESName TIP3 .or. RESName DUM END 
+
+! { All section done }
+
+STOP

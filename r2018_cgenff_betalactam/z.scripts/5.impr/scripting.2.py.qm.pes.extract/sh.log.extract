@@ -1,0 +1,10 @@
+#!/bin/bash
+
+module load python
+
+python pes.extract.py 'D(6,1,5,4)' template.pdb ../scripting.1.bash.gauss.pes.launch/dihe_1.neg/dihe_1.neg.log ../0.qm.pes.decrypted
+python pes.extract.py 'D(6,1,2,3)' template.pdb ../scripting.1.bash.gauss.pes.launch/dihe_2.pos/dihe_2.pos.log ../0.qm.pes.decrypted
+python pes.extract.py 'D(6,1,2,3)' template.pdb ../scripting.1.bash.gauss.pes.launch/dihe_0.neg/dihe_0.neg.log ../0.qm.pes.decrypted
+python pes.extract.py 'D(6,1,5,4)' template.pdb ../scripting.1.bash.gauss.pes.launch/dihe_1.pos/dihe_1.pos.log ../0.qm.pes.decrypted
+python pes.extract.py 'D(6,1,2,3)' template.pdb ../scripting.1.bash.gauss.pes.launch/dihe_2.neg/dihe_2.neg.log ../0.qm.pes.decrypted
+python pes.extract.py 'D(6,1,2,3)' template.pdb ../scripting.1.bash.gauss.pes.launch/dihe_0.pos/dihe_0.pos.log ../0.qm.pes.decrypted

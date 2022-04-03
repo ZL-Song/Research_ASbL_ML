@@ -1,0 +1,114 @@
+* PROJ Force Field Dev - small drug molecules
+* Dihedral force constant optimization
+* Testing CHARMM MM potential energy surfaces for *** SINGLE *** dihedral
+* UNIT 69: output file @dihename.mm.ene
+* Usage:
+*   CHARMM dihename:dihe_n pdbdir:dihe_n.pdbdir -i dihe_pes.inp -o log
+* Zilin Song, 17 JAN 2019
+* 
+
+! NOTE: very important:
+!           in this script, it is mandatory that:
+!           all absolute directory names contains ** only ** lower case letters
+! NOTE: even more important:
+!           ** change ** diheSpec variable to specify the interested dihedral angle before run.
+
+! { pre-defined parameters }
+! dihename: dihe_n
+! pdbdir:   dihe_n.pdbdir
+! { end }
+
+ IOFOrmat EXTEent
+ PRNLev 3
+ BOMLev 0
+
+! { Dihedral pes scan criterias TODO: this part is to be changed by scan script}
+
+ ! this following line should be changed depending on which dihedral is under scan
+ 
+ SET diheSpec 5 1 6 10          ! #### 
+ SET pdbcount 122               ! total number of pdbs
+
+! { Script logic control }
+
+ SET residue frg5             ! name of target molecule
+ SET optff ./frg5.strm        ! .strm to optimize.
+    
+ ! cgenff force field directory
+ ! must have following files: 
+ ! par_all36_cgenff.prm / top_all36_cgenff.rtf
+ ! toppar_dum_noble_gases.str / toppar_water_ions.str
+ SET topparDir ./forcefield
+
+! { read force field Cgenff force fields to support generated force field }
+
+ OPEN UNIT 10 READ CARD NAME @topparDir/top_all36_cgenff.rtf
+  READ rtf CARD UNIT 10
+  CLOSe UNIT 10
+
+ BOMLev -2                                       ! required for passing NBFIX error.
+                                                 ! NBFIX error pops up when:
+                                                 ! No protein force field read before cgenff.
+ OPEN UNIT 10 READ CARD NAME @topparDir/par_all36_cgenff.prm
+  READ param CARD FLEX UNIT 10                ! FLEX is required for mass changed force fields.
+  CLOSe UNIT 10
+ BOMLev 0
+
+ STREam @topparDir/toppar_dum_noble_gases.str    ! dummy atom force field
+ STREam @topparDir/toppar_water_ions.str         ! water tip3 force field
+
+ ! read optimized force field
+ STREam @optff
+ 
+ OPEN UNIT 69 WRITe FORM NAME @dihename.mm.ene    ! output file
+
+! { target molecule psf: crd is read from qm pdbs }
+
+    READ SEQUence CARD
+    * @residue
+    * 
+    1
+    @residue
+    
+    GENErate @residue FIRSt none LAST none WARN SETUp
+
+! { Dihedral pes loop }
+ 
+ ! pdb scaned flag -> tell CHARMM when to stop.
+ SET currPdb 1
+
+ OPEN UNIT 21 READ FORM NAME @pdbdir
+
+ LABEl loop_pdb
+  GET dPdbName UNIT 21      ! one line from pdbdir, must be only lower case letters.
+  
+  ! read pdb coor
+  OPEN UNIT 31 READ FORM NAME @dPdbName
+   READ coor pdb UNIT 31
+   CLOSe UNIT 31
+  
+  ! set constraints for all dihedrals. cp from dihe.cons
+  CONS DIHE 1 N6 1 C1 1 S5 1 C4 FORCe 9999. MAIN PERIod 0
+  CONS DIHE 1 N2 1 C1 1 N6 1 H9 FORCe 9999. MAIN PERIod 0
+  CONS DIHE 1 S5 1 C1 1 N6 1 H10 FORCe 9999. MAIN PERIod 0
+  CONS DIHE 1 N6 1 C1 1 N2 1 C3 FORCe 9999. MAIN PERIod 0
+  
+  ! do minimization here
+
+  ! clear all cons on dihedral
+  CONS CLDH
+  
+  ! calc pe
+  ENERgy
+  QUICk @diheSpec
+  SET d ?phi
+  SET e ?ener
+  ECHU 69
+  ECHO @d @e @dPdbName
+ 
+ INCRement currPdb
+ IF @currPdb .le. @pdbcount GOTO loop_pdb
+
+ CLOSe UNIT 21
+
+STOP

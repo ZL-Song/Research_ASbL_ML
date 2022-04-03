@@ -1,0 +1,17 @@
+#!/bin/bash
+#SBATCH -J gaussian
+#SBATCH -p mic
+#SBATCH --mem=250GB
+#SBATCH -c 8
+
+module purge
+module load gaussian/g16a
+
+input_name=frg_mp2                 # change as needed
+input_file=${input_name}.gjf
+output_file=${input_name}.log
+
+mkdir ${input_name}
+cp ${input_file} ${input_name}/.
+cd ${input_name}
+g16 < ${input_file} > ${output_file}

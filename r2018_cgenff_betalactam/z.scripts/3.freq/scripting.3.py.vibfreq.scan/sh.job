@@ -1,0 +1,10 @@
+#!/bin/sh
+#SBATCH -J frg5freq
+#SBATCH -o log.chrgSearch
+#SBATCH -p htc
+#SBATCH -N 1
+#SBATCH --exclusive
+#SBATCH --mem=250GB
+
+module load python
+python vibfreq.scan.py

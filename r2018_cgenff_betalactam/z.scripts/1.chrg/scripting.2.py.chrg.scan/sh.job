@@ -1,0 +1,10 @@
+#!/bin/sh
+#SBATCH -J frg5
+#SBATCH -o log.chrgSearch
+#SBATCH -p standard-mem-s
+#SBATCH -N 1
+#SBATCH --exclusive
+#SBATCH --mem=250GB
+
+module load python
+python chrg.scan.py

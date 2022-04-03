@@ -1,0 +1,10 @@
+#!/bin/sh
+#SBATCH -J frg5dihe
+#SBATCH -o log.chrgSearch
+#SBATCH -p standard-mem-l
+#SBATCH -N 1
+#SBATCH --exclusive
+#SBATCH --mem=250GB
+
+module load python
+python dihe.scan.py

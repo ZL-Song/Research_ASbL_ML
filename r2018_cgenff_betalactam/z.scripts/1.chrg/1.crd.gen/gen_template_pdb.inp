@@ -1,0 +1,64 @@
+* PROJ Force Field Dev - small drug molecules
+* Generate template pdb for target molecule
+* the coors should be replaced by gaussian opt data.
+* Zilin Song,  11/28/2018
+* 
+
+    IOFOrmat EXTEnded
+    PRNLev 6
+    BOMLev 0
+
+    SET genff ./frg5.strm               ! name of generated force field file
+    SET topparDir ./forcefield          ! cgenff force field directory
+    SET residueName FRG5                 ! name of target molecule
+    
+    SET outputdir output                ! output directory 
+    SYSTem "mkdir output"
+
+    SET zeed 1 C1  1 S5  1 N6           ! seed for IC table creation
+
+! { read force field Cgenff force fields to support generated force field }
+
+    OPEN UNIT 10 READ CARD NAME @topparDir/top_all36_cgenff.rtf
+        READ rtf CARD UNIT 10
+        CLOSe UNIT 10
+    
+    BOMLev -2                           ! required for passing NBFIX error.
+                                        ! NBFIX error pops up when:
+                                        ! No protein force field read before cgenff.
+    OPEN UNIT 10 READ CARD NAME @topparDir/par_all36_cgenff.prm
+        READ param CARD FLEX UNIT 10    ! FLEX is required for mass changed force fields.
+        CLOSe UNIT 10
+    BOMLev 0
+
+    ! read generated force field
+    STREam @genff
+
+! { creat topology / no need to read cor & psf, syntax: }
+    READ SEQUence CARD      ! READ SEQUence CARD
+    * @residueName          ! title - 0
+    *                       ! title optional - 1
+    1                       ! number of residue
+    @residueName            ! repeat (residue name)
+
+    GENErate @residueName -
+        FIRSt none -        ! no first capping
+        LAST none -         ! no last capping
+        WARN -              ! list element deleted due to nonexistance of atoms
+        SETUp               ! append any IC table entries from topology to main IC table
+    
+    IC GENErate
+    IC PARAm
+    IC SEED @zeed
+    IC BUILd
+    IC PURGe
+    IC PRINt
+
+    COOR PRINt
+    
+    OPEN UNIT 31 WRITe FORM NAME @outputdir/@residueName.pdb
+        WRITe COOR pdb CARD UNIT 31
+
+    STOP
+
+

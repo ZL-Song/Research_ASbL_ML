@@ -1,0 +1,1 @@
+charmm dihename:dihe_2 pdbdir:../0.qm.pes.decrypted/pdbdir/dihe_2.pdbdir < dihe_pes.inp > log

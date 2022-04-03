@@ -1,0 +1,26 @@
+%chk=frgs.chk
+%mem=250GB
+%nprocshared=4
+# opt=tight mp2/6-31g(d) nosymm pop=(mk,dipole) density=current
+
+title
+
+chrg mulp
+cartersian coors
+
+
+
+--LINK1--
+%chk=frgs.chk
+%mem=250GB
+%nprocshared=4
+#MP2/6-31G* NOSYMM GEOM=ALLCHECK FREQ IOP(7/33=1)
+
+frgs FREQUENCY
+
+chrg mulp
+
+
+
+
+

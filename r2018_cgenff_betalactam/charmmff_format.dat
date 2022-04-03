@@ -1,0 +1,79 @@
+
+=================================
+In RTF file:
+
+
+    ! residue   name    totalcharge
+    RESI        CYG     0.00
+
+    GROUP
+    ! atom  atomName    atomType      charge
+    ATOM    N           NH1           -0.47
+    ! bonding connectivity
+    BOND CB CA   SG CB   N HN  N  CA
+
+    DOUBLE O  C CDG OE1  CG OE1
+
+    !Improper definition notes the planarity of residue
+    IMPR CDG OE1 SG CGG  CG O1G O2G CAG 
+
+    DONOR HN2G NG HN1G NG HO2G O2G
+    ACCEPTOR O C OE1G CDG O1G CG O2G CG NG CAG
+
+
+=================================
+In param file:
+
+
+    ! bond params
+    BONDS
+    !
+    !   V(bond) = Kb * (b - b0)^2
+    !   Kb:    kCal/mole/(A^2)    force constant on bond length
+    !   b0:    Angstrom           equilibrium bond length
+    !
+    !atom types on bond                   Kb                  b0
+    S                CC                 240.000             1.7814
+
+    ANGLES
+    !
+    !   V(angle) = K_theta * (theta - theta0)^2 (.and.) V(Urey-Bradley) = Kub(S - S0)**2
+    !   K_theta:    kCal/mole/(rad^2)               force constant on bond angle
+    !   theta0:     Degrees                         equilibrium bond angle
+    !   Kub:        kCal/mole/A**2 (Urey-Bradley)   \ note:
+    !   S0:         Angstrom                        / these two terms is important for vibr spectru
+    !
+    !atom types on angle        K_theta     theta0       Kub       S0
+    CG2D1O CG2O3  OG2D2          40.00      116.00      50.00   2.35300
+    
+    DIHEDRALS
+    !
+    !   V(dihedral) = K_chi * (1 + cos(n * chi - delta))
+    !   K_chi:      kCal/mole                       force constant on dihedral
+    !   n:          Multiplicity                    phase: periodicity of PES/ no. minimas
+    !   delta:      Degrees                         Location of 1 Minima
+    !
+    !atom types on dihedral         K_chi       n       delta
+    CC    S     CT2     CT1         0.2400      1       180.00
+
+
+=================================
+Addition notations on dihedral:
+
+            Dihedral parameters in CHARMM format
+    
+    Multiplicity, n         Phase, delta            Location of Minima                        notes
+        1                       0                          180                      yields trans conformation
+        1                      180                          0                       yields cis conformation
+        2                       0                        90   270                   I don't know what this means
+        2                      180                       0    180                   useful for enforcing planarity
+        3                       0                     60   180   300                emphasizes staggered conformation of sp3 carbons
+        3                      180                    0    120   240                emphasizes eclipsed conformation of sp3 carbons
+
+
+
+
+
+
+
+
