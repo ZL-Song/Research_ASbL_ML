@@ -1,0 +1,48 @@
+* make pdb files along the path.
+* Zilin Song, 03 may 2022
+* 
+
+prnlev 5 node 0
+ioformat extended
+
+stream /users/zilins/scratch/6.proj_ges_imi/x.forcefields/ff.get.strm
+
+set iseg 1
+
+label frameloop
+
+read  psf card name @inpsf
+read coor card name @incor
+
+dele atom sele segid Q* .and. .not. segid Q@iseg end
+dele atom sele type QQH* end
+dele atom sele resname TIP3 .and. .not. (resid 287 .and. segid Q@iseg) end
+dele atom sele resname SOD .or. resname CLA end
+
+rename segid Q sele segid Q* end
+
+write  psf card name @outdir/@outpsf
+write coor  pdb name @outdir/r@iseg.pdb
+write coor card name @outdir/r@iseg.cor
+
+dele atom sele all end
+
+incr iseg by 1
+if @iseg .le. 36 goto frameloop
+
+! { dcd output }
+! note that psf cannot be modified when traj is active.
+read  psf card name @outdir/@outpsf
+
+open write unit 22 file name @outdir/@outdcd
+traj iwrite 22 nwrite 1 nfile 36 skip 1     ! must be called after read-psf
+
+! { traj writing loop }
+set currep 1
+label dcd_loop
+ read coor card name @outdir/r@currep.cor
+ traj write
+ incr currep by 1
+if currep .le. 36 goto dcd_loop
+
+stop

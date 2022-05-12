@@ -1,0 +1,5 @@
+  no hbond: (164,)
+  o7 hbond: (327,)
+  og hbond: (6,)
+both hbond: (3,)
+(20, 25)

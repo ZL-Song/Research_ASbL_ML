@@ -1,0 +1,11 @@
+#!/bin/bash
+#SBATCH -J ges_extracting 
+#SBATCH -p medium-mem-2 
+#SBATCH -n 2
+#SBATCH --mem=20GB
+#SBATCH --exclude=p001,k001
+
+mkdir -p rawds
+source activate mdanalysis
+# python mk_hlabels.py
+python mk_distarrys.py edges
